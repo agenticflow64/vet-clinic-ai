@@ -3,26 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ассистент клиники «Каштанка»</title>
+<title>Чат клиники «Каштанка»</title>
 <style>
   :root {
-    --accent: #c2563a;
-    --bg: #f7f4f0;
+    --accent: #a6613a;          /* фирменный цвет kashtanka64.ru */
+    --accent-dark: #874c2c;
+    --bg: #f6f8fa;
     --panel: #ffffff;
-    --text: #2b2622;
-    --muted: #8a8078;
-    --border: #e8e1d9;
-    --bot-bubble: #ffffff;
-    --user-bubble: var(--accent);
-    --user-text: #ffffff;
-  }
-  html[data-theme="dark"] {
-    --bg: #1d1a17;
-    --panel: #27231f;
-    --text: #ece6df;
-    --muted: #a1968c;
-    --border: #3a342e;
-    --bot-bubble: #312c26;
+    --text: #1f2328;
+    --muted: #57606a;
+    --border: #d0d7de;
   }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
@@ -38,41 +28,44 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     background: var(--panel);
     border-bottom: 1px solid var(--border);
     flex: none;
   }
   .logo {
-    width: 36px; height: 36px;
-    border-radius: 10px;
-    background: var(--accent);
-    color: #fff;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--accent);
     display: grid;
     place-items: center;
-    font-size: 18px;
+    flex: none;
   }
-  .title { font-weight: 600; font-size: 15px; line-height: 1.2; }
+  .logo svg { width: 18px; height: 18px; }
+  .title { font-weight: 600; font-size: 14.5px; line-height: 1.25; }
   .subtitle { font-size: 12px; color: var(--muted); }
   .spacer { flex: 1; }
   .dot {
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: #3faa6e;
+    background: #1a7f37;
+    flex: none;
   }
 
   #messages {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   .msg {
     max-width: 85%;
-    padding: 10px 14px;
-    border-radius: 16px;
+    padding: 9px 12px;
+    border-radius: 10px;
     font-size: 14px;
     line-height: 1.45;
     white-space: pre-wrap;
@@ -80,44 +73,42 @@
   }
   .msg.bot {
     align-self: flex-start;
-    background: var(--bot-bubble);
+    background: var(--panel);
     border: 1px solid var(--border);
-    border-bottom-left-radius: 4px;
+    border-top-left-radius: 4px;
   }
   .msg.user {
     align-self: flex-end;
-    background: var(--user-bubble);
-    color: var(--user-text);
-    border-bottom-right-radius: 4px;
+    background: var(--accent);
+    color: #fff;
+    border-top-right-radius: 4px;
   }
   .msg .badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     margin-top: 6px;
-    padding: 2px 8px;
-    border-radius: 8px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
   }
-  .badge.urgent   { background: #fde8e4; color: #b3271e; }
-  .badge.soon     { background: #fdf3d7; color: #8a6d1a; }
-  .badge.routine  { background: #e2f3e8; color: #2c7a4b; }
-  html[data-theme="dark"] .badge.urgent  { background: #4a2622; color: #f2a49b; }
-  html[data-theme="dark"] .badge.soon    { background: #463c1d; color: #e5c97a; }
-  html[data-theme="dark"] .badge.routine { background: #1f3a2b; color: #93d3ac; }
+  .badge i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .badge.urgent  { color: #cf222e; } .badge.urgent i  { background: #cf222e; }
+  .badge.soon    { color: #9a6700; } .badge.soon i    { background: #9a6700; }
+  .badge.routine { color: #1a7f37; } .badge.routine i { background: #1a7f37; }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
   .chip {
     border: 1px solid var(--border);
     background: var(--panel);
     color: var(--text);
-    border-radius: 14px;
-    padding: 6px 12px;
+    border-radius: 6px;
+    padding: 5px 10px;
     font-size: 12.5px;
     cursor: pointer;
   }
-  .chip:hover { border-color: var(--accent); }
+  .chip:hover { border-color: var(--accent); color: var(--accent-dark); }
 
-  .typing { display: flex; gap: 4px; padding: 4px 8px; }
+  .typing { display: flex; gap: 4px; padding: 4px 6px; }
   .typing span {
     width: 6px; height: 6px;
     background: var(--muted);
@@ -131,7 +122,7 @@
   form {
     display: flex;
     gap: 8px;
-    padding: 12px;
+    padding: 10px 12px;
     background: var(--panel);
     border-top: 1px solid var(--border);
     flex: none;
@@ -139,10 +130,10 @@
   input {
     flex: 1;
     border: 1px solid var(--border);
-    background: var(--bg);
+    background: var(--panel);
     color: var(--text);
-    border-radius: 12px;
-    padding: 10px 14px;
+    border-radius: 6px;
+    padding: 9px 12px;
     font-size: 14px;
     outline: none;
   }
@@ -151,21 +142,32 @@
     border: none;
     background: var(--accent);
     color: #fff;
-    border-radius: 12px;
-    width: 42px;
+    border-radius: 6px;
+    width: 38px;
     cursor: pointer;
-    font-size: 16px;
+    display: grid;
+    place-items: center;
   }
+  button.send svg { width: 16px; height: 16px; }
+  button.send:hover { background: var(--accent-dark); }
   button.send:disabled { opacity: .5; }
-  .error { color: #b3271e; font-size: 12px; padding: 4px 16px 8px; }
+  .error { color: #cf222e; font-size: 12px; padding: 4px 14px 8px; }
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">🐾</div>
+  <div class="logo" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <ellipse cx="12" cy="15.5" rx="4.6" ry="3.8"/>
+      <circle cx="5.6" cy="10.2" r="2.1"/>
+      <circle cx="9.9" cy="7.4" r="2.1"/>
+      <circle cx="14.1" cy="7.4" r="2.1"/>
+      <circle cx="18.4" cy="10.2" r="2.1"/>
+    </svg>
+  </div>
   <div>
-    <div class="title">Ассистент клиники</div>
-    <div class="subtitle">услуги, цены, запись на приём</div>
+    <div class="title">Клиника «Каштанка»</div>
+    <div class="subtitle">администратор на связи</div>
   </div>
   <div class="spacer"></div>
   <div class="dot" title="онлайн"></div>
@@ -179,16 +181,18 @@
 </div>
 
 <form id="form">
-  <input id="input" type="text" placeholder="Напишите вопрос…" autocomplete="off" maxlength="500">
-  <button class="send" type="submit" id="send" aria-label="Отправить">➤</button>
+  <input id="input" type="text" placeholder="Напишите сообщение…" autocomplete="off" maxlength="500">
+  <button class="send" type="submit" id="send" aria-label="Отправить">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M3 11.4 21 3l-8.4 18-2.5-7.1L3 11.4z"/>
+    </svg>
+  </button>
 </form>
 
 <script>
 (function () {
   var params = new URLSearchParams(location.search);
-  var theme = params.get("theme") === "dark" ? "dark" : "light";
   var accent = params.get("accent");
-  document.documentElement.dataset.theme = theme;
   if (accent) document.documentElement.style.setProperty("--accent", "#" + accent.replace(/^#/, ""));
 
   var messagesEl = document.getElementById("messages");
@@ -217,7 +221,9 @@
     if (role === "bot" && urgency && URGENCY_BADGES[urgency]) {
       var b = document.createElement("span");
       b.className = "badge " + URGENCY_BADGES[urgency][0];
-      b.textContent = URGENCY_BADGES[urgency][1];
+      var dot = document.createElement("i");
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(URGENCY_BADGES[urgency][1]));
       el.appendChild(document.createElement("br"));
       el.appendChild(b);
     }
@@ -236,8 +242,8 @@
   }
 
   function greet() {
-    addBubble("bot", "Здравствуйте! Я ассистент ветеринарной клиники «Каштанка». " +
-      "Помогу узнать цены на услуги, оценить срочность ситуации и записать вас на приём. Чем помочь?");
+    addBubble("bot", "Здравствуйте! Это чат клиники «Каштанка». " +
+      "Подскажу цены по прайсу, помогу понять, срочно ли нужен врач, и запишу на приём. Чем помочь?");
   }
 
   form.addEventListener("submit", function (e) {
@@ -259,16 +265,13 @@
         typing.remove();
         addBubble("bot", data.reply || "…", data.urgency);
         if (data.appointment_id) {
-          var el = document.createElement("div");
-          el.className = "msg bot";
-          el.innerHTML = "✅ Заявка №" + data.appointment_id + " отправлена в клинику";
-          messagesEl.appendChild(el);
-          messagesEl.scrollTop = messagesEl.scrollHeight;
+          addBubble("bot", "Заявка №" + data.appointment_id + " отправлена в клинику. " +
+            "Перезвоним и подтвердим время.");
         }
       })
       .catch(function () {
         typing.remove();
-        addBubble("bot", "Извините, сервис временно недоступен. Позвоните нам: +7 (8452) 25-83-19");
+        addBubble("bot", "Сейчас не получается ответить. Позвоните нам: +7 (8452) 25-83-19");
       })
       .finally(function () { send.disabled = false; input.focus(); });
   });

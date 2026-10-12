@@ -6,64 +6,70 @@
 <title>Заявки на приём — админка</title>
 <style>
   :root {
-    --accent: #c2563a;
-    --bg: #f7f4f0;
-    --panel: #ffffff;
-    --text: #2b2622;
-    --muted: #8a8078;
-    --border: #e8e1d9;
+    --accent: #a6613a;
+    --accent-dark: #874c2c;
+    --bg: #ffffff;
+    --bg-alt: #f6f8fa;
+    --text: #1f2328;
+    --muted: #57606a;
+    --border: #d0d7de;
   }
   * { box-sizing: border-box; margin: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
+    background: var(--bg-alt);
     color: var(--text);
-    padding: 24px;
+    padding: 20px 24px;
   }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
-  .table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 760px; }
-  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  h1 { font-size: 20px; margin-bottom: 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .table-wrap { overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); }
   tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-alt); }
   td.time { color: var(--muted); white-space: nowrap; }
   .status {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 10px;
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
     font-weight: 600;
+    white-space: nowrap;
   }
-  .status.new       { background: #fdf3d7; color: #8a6d1a; }
-  .status.confirmed { background: #e2f0fb; color: #2b6ca3; }
-  .status.done      { background: #e2f3e8; color: #2c7a4b; }
-  .status.cancelled { background: #f5e4e1; color: #a3402f; }
+  .status i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .status.new       { color: #9a6700; } .status.new i       { background: #9a6700; }
+  .status.confirmed { color: #0969da; } .status.confirmed i { background: #0969da; }
+  .status.done      { color: #1a7f37; } .status.done i      { background: #1a7f37; }
+  .status.cancelled { color: #cf222e; } .status.cancelled i { background: #cf222e; }
   select {
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 5px 8px;
+    border-radius: 6px;
+    padding: 3px 6px;
     font-size: 12.5px;
-    background: var(--panel);
+    background: var(--bg);
     color: var(--text);
   }
-  .empty { padding: 32px; text-align: center; color: var(--muted); }
-  .actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  select:focus { outline: 1px solid var(--accent); }
+  .empty { padding: 28px; text-align: center; color: var(--muted); }
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   button.reload {
     border: 1px solid var(--border);
-    background: var(--panel);
+    background: var(--bg);
     color: var(--text);
-    padding: 8px 14px;
-    border-radius: 10px;
+    padding: 6px 12px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
   }
+  button.reload:hover { border-color: var(--accent); color: var(--accent-dark); }
   .count { font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
 <h1>Заявки на приём</h1>
-<p class="sub">Заявки, созданные AI-ассистентом в чате виджета</p>
+<p class="sub">Заявки, созданные в чате виджета</p>
 
 <div class="actions">
   <span class="count" id="count"></span>
@@ -115,7 +121,7 @@ function load() {
         "<td>" + esc(a.service) + "</td>" +
         "<td>" + esc(a.preferred_time) + "</td>" +
         "<td>" + esc(a.phone) + "</td>" +
-        '<td><span class="status ' + a.status + '">' + LABELS[a.status] + '</span> ' +
+        '<td><span class="status ' + a.status + '"><i></i>' + LABELS[a.status] + '</span> ' +
         '<select onchange="setStatus(' + a.id + ', this.value)">' + options + "</select></td>" +
         "</tr>";
     }).join("");

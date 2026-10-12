@@ -3,22 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Клиника «Каштанка» — демо AI-ассистента</title>
+<title>Клиника «Каштанка» — демо чат-виджета</title>
 <style>
   :root {
-    --accent: #c2563a;
-    --bg: #faf7f3;
-    --panel: #ffffff;
-    --text: #2b2622;
-    --muted: #8a8078;
-    --border: #e8e1d9;
-  }
-  html[data-theme="dark"] {
-    --bg: #1d1a17;
-    --panel: #27231f;
-    --text: #ece6df;
-    --muted: #a1968c;
-    --border: #3a342e;
+    --accent: #a6613a;          /* фирменный цвет kashtanka64.ru */
+    --accent-dark: #874c2c;
+    --bg: #ffffff;
+    --bg-alt: #f6f8fa;
+    --text: #1f2328;
+    --muted: #57606a;
+    --border: #d0d7de;
   }
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -30,72 +24,63 @@
     flex-direction: column;
   }
 
-  .demo-ribbon {
-    background: var(--accent);
-    color: #fff;
+  .demo-note-bar {
+    background: var(--bg-alt);
+    color: var(--muted);
     text-align: center;
     font-size: 12px;
     padding: 5px 12px;
-    letter-spacing: .3px;
+    border-bottom: 1px solid var(--border);
   }
 
   .site-header {
     display: flex;
     align-items: center;
     gap: 24px;
-    padding: 14px 24px;
-    background: var(--panel);
+    padding: 12px 24px;
+    background: var(--bg);
     border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
   }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
   .brand .paw {
-    width: 38px; height: 38px;
-    background: var(--accent);
-    border-radius: 10px;
+    width: 34px; height: 34px;
+    color: var(--accent);
     display: grid; place-items: center;
-    font-size: 19px;
+    flex: none;
   }
+  .brand .paw svg { width: 24px; height: 24px; }
   nav { display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap; }
-  nav a { color: var(--text); text-decoration: none; opacity: .85; }
-  nav a:hover { opacity: 1; color: var(--accent); }
-  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  nav a { color: var(--text); text-decoration: none; }
+  nav a:hover { color: var(--accent-dark); }
+  .header-right { margin-left: auto; }
   .phone-btn {
     background: var(--accent);
     color: #fff;
     border: none;
-    border-radius: 10px;
-    padding: 9px 14px;
+    border-radius: 6px;
+    padding: 8px 14px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
   }
-  .theme-toggle {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 10px;
-    cursor: pointer;
-    color: var(--text);
-    font-size: 14px;
-  }
+  .phone-btn:hover { background: var(--accent-dark); }
 
   .hero {
-    padding: 52px 24px 36px;
+    padding: 44px 24px 28px;
     text-align: center;
     max-width: 720px;
     margin: 0 auto;
   }
-  .hero h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 700; }
-  .hero h1 em { color: var(--accent); font-style: normal; }
-  .hero p { color: var(--muted); margin-top: 12px; font-size: 15px; line-height: 1.55; }
+  .hero h1 { font-size: clamp(24px, 4vw, 32px); font-weight: 700; }
+  .hero p { color: var(--muted); margin-top: 10px; font-size: 15px; line-height: 1.55; }
 
   .demo-note {
     max-width: 720px;
     margin: 0 auto 20px;
-    padding: 10px 16px;
-    border: 1px dashed var(--border);
-    border-radius: 12px;
+    padding: 9px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
     font-size: 12.5px;
     color: var(--muted);
     text-align: center;
@@ -104,75 +89,72 @@
 
   .chat-wrap {
     width: min(420px, calc(100vw - 32px));
-    margin: 0 auto 60px;
-    border-radius: 18px;
+    margin: 0 auto 56px;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--border);
-    box-shadow: 0 12px 40px rgba(0,0,0,.12);
-    background: var(--panel);
+    box-shadow: 0 1px 3px rgba(31, 35, 40, .12);
+    background: var(--bg);
     height: 620px;
   }
   .chat-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
 
   footer {
     margin-top: auto;
-    padding: 18px 24px;
+    padding: 16px 24px;
     text-align: center;
     font-size: 12px;
     color: var(--muted);
     border-top: 1px solid var(--border);
     line-height: 1.6;
   }
-  footer a { color: var(--accent); }
+  footer a { color: var(--accent-dark); }
 </style>
 </head>
-<body data-initial-theme="light">
-<div class="demo-ribbon">ДЕМО-СТЕНД · AI-ассистент — отдельный сервис, готов к встраиванию в сайт kashtanka64.ru</div>
+<body>
+<div class="demo-note-bar">Демо-стенд: чат-виджет для встраивания на kashtanka64.ru</div>
 
 <header class="site-header">
-  <div class="brand"><span class="paw">🐾</span> Каштанка</div>
+  <div class="brand">
+    <span class="paw" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <ellipse cx="12" cy="15.5" rx="4.6" ry="3.8"/>
+        <circle cx="5.6" cy="10.2" r="2.1"/>
+        <circle cx="9.9" cy="7.4" r="2.1"/>
+        <circle cx="14.1" cy="7.4" r="2.1"/>
+        <circle cx="18.4" cy="10.2" r="2.1"/>
+      </svg>
+    </span>
+    Каштанка
+  </div>
   <nav>
     <a href="#">Главная</a><a href="#">Врачи</a><a href="#">Цены</a>
     <a href="#">Первый визит</a><a href="#">Вопросы</a><a href="#">Контакты</a>
   </nav>
   <div class="header-right">
-    <button class="theme-toggle" id="themeToggle" title="Переключить тему">🌙</button>
     <button class="phone-btn">+7 (8452) 25-83-19</button>
   </div>
 </header>
 
 <section class="hero">
-  <h1>Ветеринарная клиника <em>«Каштанка»</em></h1>
+  <h1>Ветеринарная клиника «Каштанка»</h1>
   <p>Терапевт и узкие специалисты, УЗИ-диагностика, хирургия.<br>
      Запись по телефону, приём каждый день без выходных.</p>
 </section>
 
 <div class="demo-note">
-  Это демо-страница для показа встраивания: шапка имитирует оформление сайта
-  kashtanka64.ru, чат ниже — AI-ассистент (iframe-виджет этого демо-стенда).
+  Демо-страница встраивания: шапка повторяет оформление сайта kashtanka64.ru,
+  ниже в iframe - сам чат-виджет этого стенда.
 </div>
 
 <div class="chat-wrap">
-  <iframe id="chatFrame" src="/widget?theme=light&accent=c2563a" title="AI-ассистент клиники"></iframe>
+  <iframe id="chatFrame" src="/widget" title="Чат клиники «Каштанка»"></iframe>
 </div>
 
 <footer>
   Реальный сайт клиники: <a href="https://kashtanka64.ru" target="_blank" rel="noopener">kashtanka64.ru</a> ·
   г. Саратов, ул. Павлецкая, 69 · ежедневно 10:00–20:00<br>
-  Демо-стенд AI-ассистента. Ассистент не заменяет консультацию ветеринарного врача.
+  Демо-стенд. Чат не заменяет консультацию ветеринарного врача.
 </footer>
-
-<script>
-  var toggle = document.getElementById("themeToggle");
-  var frame = document.getElementById("chatFrame");
-  var theme = "light";
-  toggle.addEventListener("click", function () {
-    theme = theme === "light" ? "dark" : "light";
-    document.documentElement.dataset.theme = theme;
-    toggle.textContent = theme === "light" ? "🌙" : "☀️";
-    var src = frame.src.split("?")[0] + "?theme=" + theme + "&accent=c2563a";
-    frame.src = src;
-  });
-</script>
 </body>
 </html>
