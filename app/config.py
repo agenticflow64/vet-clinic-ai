@@ -31,19 +31,15 @@ class Settings:
     """Все настройки приложения. Ключи читаются из окружения или .env."""
 
     def __init__(self) -> None:
-        # LLM: основной провайдер OpenRouter (бесплатная модель) + резерв GLM
+        # LLM: только бесплатные модели OpenRouter, цепочка fallback
         self.openrouter_api_key = _env("OPENROUTER_API_KEY")
         self.openrouter_base_url = _env(
             "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
         ).rstrip("/")
-        self.llm_model = _env("LLM_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
+        self.llm_models = _env("LLM_MODELS", "")
 
-        self.glm_api_key = _env("GLM_API_KEY")
-        self.glm_base_url = _env("GLM_BASE_URL").rstrip("/")
-        self.glm_model = _env("GLM_MODEL", "glm-4.5-flash")
-
-        # эмбеддинги
-        self.embed_model = _env("EMBED_MODEL", "openai/text-embedding-3-small")
+        # эмбеддинги: локальный GPU-сервис (bge-m3), см. embeddings_service/
+        self.embed_model = _env("EMBED_MODEL", "bge-m3")
 
         # хранилище
         self.db_path = Path(_env("DB_PATH", str(PROJECT_ROOT / "data" / "vetclinic.db")))

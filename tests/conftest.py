@@ -82,11 +82,12 @@ class ScriptedLLM:
 
 @pytest.fixture()
 def offline_env(monkeypatch, tmp_path):
-    """Подменяет embed и chat, создаёт чистую базу с мини-корпусом."""
-    monkeypatch.setattr(embeddings_mod, "embed", HashEmbedder())
+    """Подменяет embed/embed_query и chat, создаёт чистую базу с мини-корпусом."""
+    hash_embedder = HashEmbedder()
+    monkeypatch.setattr(embeddings_mod, "embed", hash_embedder)
+    monkeypatch.setattr(embeddings_mod, "embed_query", lambda text, conn: hash_embed(text))
     scripted = ScriptedLLM()
     monkeypatch.setattr(llm_mod, "chat", scripted)
-    monkeypatch.setattr("app.assistant.llm.chat", scripted)
 
     db = tmp_path / "test.db"
     conn = store.connect(db)

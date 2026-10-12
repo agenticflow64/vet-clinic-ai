@@ -35,7 +35,7 @@ class PriceSearch:
 
     def search(self, query: str, k: int = 6) -> list[dict]:
         """Top-k услуг по косинусной близости (векторы нормированы)."""
-        query_vec = embeddings.embed([query], self.conn)[0]
+        query_vec = embeddings.embed_query(query, self.conn)
         qv = embeddings.normalize(query_vec)
         scored = []
         for item in self._items:
