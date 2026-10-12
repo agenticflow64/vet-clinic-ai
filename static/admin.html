@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Заявки на приём — админка</title>
+<style>
+  :root {
+    --accent: #c2563a;
+    --bg: #f7f4f0;
+    --panel: #ffffff;
+    --text: #2b2622;
+    --muted: #8a8078;
+    --border: #e8e1d9;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 760px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  td.time { color: var(--muted); white-space: nowrap; }
+  .status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .status.new       { background: #fdf3d7; color: #8a6d1a; }
+  .status.confirmed { background: #e2f0fb; color: #2b6ca3; }
+  .status.done      { background: #e2f3e8; color: #2c7a4b; }
+  .status.cancelled { background: #f5e4e1; color: #a3402f; }
+  select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 12.5px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .empty { padding: 32px; text-align: center; color: var(--muted); }
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  button.reload {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .count { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Заявки на приём</h1>
+<p class="sub">Заявки, созданные AI-ассистентом в чате виджета</p>
+
+<div class="actions">
+  <span class="count" id="count"></span>
+  <button class="reload" onclick="load()">Обновить</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>№</th><th>Создана</th><th>Животное</th><th>Кличка</th>
+        <th>Услуга</th><th>Желаемое время</th><th>Телефон</th><th>Статус</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty" hidden>Пока нет заявок — создайте одну через виджет</div>
+</div>
+
+<script>
+var STATUSES = ["new", "confirmed", "done", "cancelled"];
+var LABELS = { new: "новая", confirmed: "подтверждена", done: "завершена", cancelled: "отменена" };
+
+function fmtTs(ts) {
+  var d = new Date(ts * 1000);
+  return d.toLocaleDateString("ru-RU") + " " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+function load() {
+  fetch("/api/appointments").then(function (r) { return r.json(); }).then(function (items) {
+    var rows = document.getElementById("rows");
+    document.getElementById("empty").hidden = items.length > 0;
+    document.getElementById("count").textContent = "Всего: " + items.length;
+    rows.innerHTML = items.map(function (a) {
+      var options = STATUSES.map(function (s) {
+        return '<option value="' + s + '"' + (s === a.status ? " selected" : "") + ">" + LABELS[s] + "</option>";
+      }).join("");
+      return "<tr>" +
+        "<td>" + a.id + "</td>" +
+        '<td class="time">' + fmtTs(a.created_at) + "</td>" +
+        "<td>" + esc(a.pet_type) + "</td>" +
+        "<td>" + esc(a.pet_name) + "</td>" +
+        "<td>" + esc(a.service) + "</td>" +
+        "<td>" + esc(a.preferred_time) + "</td>" +
+        "<td>" + esc(a.phone) + "</td>" +
+        '<td><span class="status ' + a.status + '">' + LABELS[a.status] + '</span> ' +
+        '<select onchange="setStatus(' + a.id + ', this.value)">' + options + "</select></td>" +
+        "</tr>";
+    }).join("");
+  });
+}
+
+function setStatus(id, status) {
+  fetch("/api/appointments/" + id, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: status })
+  }).then(load);
+}
+
+load();
+</script>
+</body>
+</html>
