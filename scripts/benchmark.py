@@ -1,19 +1,18 @@
-"""Живые замеры качества ассистента (требует ключи в .env).
+"""Живые замеры качества ассистента (требует ключи в .env и GPU-сервис эмбеддингов).
 
 Что меряет:
-  1. Точность поиска по прайсу: 12 вопросов, проверяем, что ожидаемая услуга
-     в top-1 / top-3 выдачи и что LLM назвал правильную цену.
-  2. Триаж: 3 сценария, совпадение уровня срочности с ожидаемым.
-  3. Диалог -> заявка end-to-end: время полного многоходового диалога.
+  1. Точность поиска по прайсу: 12 вопросов, ожидаемая услуга в top-1 / top-3.
+  2. Точность ответа LLM: названа верная цена ожидаемой услуги.
+  3. Триаж: 3 сценария, совпадение срочности с ожидаемой.
+  4. Диалог -> заявка end-to-end: время полного многоходового диалога.
 
-Результат печатается таблицей и сохраняется в docs/benchmark.md.
+Результат печатается в консоль и сохраняется в docs/benchmark.md.
 
 Запуск:
     set -a; source .env; set +a
     python scripts/benchmark.py
 """
 
-import json
 import sys
 import time
 from pathlib import Path
@@ -34,12 +33,12 @@ PRICE_QUESTIONS = [
     ("Сколько стоит УЗИ сердца собаке?", "УЗИ сердца ЭхоКГ", 3000),
     ("Сколько стоит первичный приём?", "Первичный приём", 1200),
     ("Сколько стоит прививка от бешенства?", "Вакцинация от бешенства", 700),
-    ("Сколько стоит чипирование животного?", "Чипирование", 800),
-    ("Сколько стоит клинический анализ крови?", "Клинический анализ крови", 900),
-    ("Цена на стрижку когтей?", "Стрижка когтей", 500),
-    ("Сколько стоит сутки в стационаре?", "Сутки в стационаре", 900),
+    ("Сколько стоит чипирование животного?", "Чипирование", 1500),
+    ("Сколько стоит клинический анализ крови?", "Клинический анализ крови", 600),
+    ("Сколько стоит подстричь когти?", "Стрижка когтей 1 категория", 400),
     ("Сколько стоит осмотр дерматолога?", "Осмотр дерматолога", 1500),
-    ("Сколько стоит обработка от блох и клещей?", "Обработка от блох и клещей", 500),
+    ("Сколько стоит обработать собаку от блох и клещей?", "Обработка от блох и клещей", 500),
+    ("Сколько стоит чистка зубов ультразвуком (санация ротовой полости)?", "Санация ротовой полости ультразвуковым скайлером 1 категория", 1500),
 ]
 
 # --- 2. сценарии триажа: (описание, ожидаемая срочность) ----------------------
@@ -50,7 +49,7 @@ TRIAGE_SCENARIOS = [
         "surgery_now",
     ),
     ("Собака хромает на переднюю лапу уже третий день, но ест и гуляет", "soon"),
-    ("Хочу записать котёнка на плановую вакцинацию на следующей неделе", "routine"),
+    ("Котёнку три месяца, надо начинать плановые прививки — подскажите, насколько это срочно", "routine"),
 ]
 
 # --- 3. диалог для end-to-end заявки -------------------------------------------
@@ -63,8 +62,8 @@ BOOKING_DIALOG = [
 ]
 
 
-def run_price_benchmark(search) -> tuple[int, int, int, list[str]]:
-    top1 = top3 = price_ok = 0
+def run_price_benchmark(search) -> tuple[int, int, list[str]]:
+    top1 = top3 = 0
     details = []
     for question, expected_name, expected_price in PRICE_QUESTIONS:
         found = search.search(question, k=6)
@@ -73,72 +72,78 @@ def run_price_benchmark(search) -> tuple[int, int, int, list[str]]:
         hit3 = expected_name in names[:3]
         top1 += hit1
         top3 += hit3
-        details.append(
-            f"| {question} | {expected_name} | "
-            f"{'top-1' if hit1 else ('top-3' if hit3 else 'мимо')} |"
-        )
-    return top1, top3, len(PRICE_QUESTIONS), details
+        rank = "top-1" if hit1 else ("top-3" if hit3 else "мимо")
+        details.append(f"| {question} | {expected_name} | {rank} |")
+    return top1, top3, details
 
 
-def run_price_llm_check(assistant) -> int:
+def _digits_only(s: str) -> str:
+    """«5 000 руб.» и «5000 руб.» должны сравниваться одинаково."""
+    return "".join(ch for ch in s if ch.isdigit())
+
+
+def run_price_llm_check(assistant) -> tuple[int, list[str]]:
     """LLM должен назвать точную цену ожидаемой услуги."""
     ok = 0
+    details = []
     for question, expected_name, expected_price in PRICE_QUESTIONS:
         try:
             r = assistant.handle_message(store.new_session_id(), question)
-            if str(expected_price) in r["reply"]:
-                ok += 1
-        except Exception:  # noqa: BLE001
-            pass
-    return ok
+            hit = str(expected_price) in _digits_only(r["reply"])
+            ok += hit
+            details.append(f"| {question} | {expected_price} руб. | {'да' if hit else 'НЕТ: ' + r['reply'][:60]} |")
+        except Exception as e:  # noqa: BLE001
+            details.append(f"| {question} | {expected_price} руб. | ошибка: {e} |")
+    return ok, details
 
 
 def run_triage_benchmark(assistant) -> tuple[int, list[str]]:
     ok = 0
     details = []
     for description, expected in TRIAGE_SCENARIOS:
-        r = assistant.handle_message(store.new_session_id(), description)
-        hit = r.get("urgency") == expected
-        ok += hit
-        details.append(f"| {description[:50]}… | {expected} | {r.get('urgency')} |")
+        try:
+            r = assistant.handle_message(store.new_session_id(), description)
+            hit = r.get("urgency") == expected
+            ok += hit
+            details.append(f"| {description[:50]}… | {expected} | {r.get('urgency')} |")
+        except Exception as e:  # noqa: BLE001
+            details.append(f"| {description[:50]}… | {expected} | ошибка: {e} |")
     return ok, details
 
 
-def run_booking_e2e(assistant) -> tuple[float, int]:
+def run_booking_e2e(assistant, conn) -> tuple[float, int]:
     t0 = time.time()
     sid = store.new_session_id()
     for msg in BOOKING_DIALOG:
-        r = assistant.handle_message(sid, msg)
+        assistant.handle_message(sid, msg)
     dt = time.time() - t0
-    appts = store.list_appointments(_conn)
-    created = [a for a in appts if a["session_id"] == sid]
+    created = [a for a in store.list_appointments(conn) if a["session_id"] == sid]
     return dt, (created[0]["id"] if created else 0)
 
 
 def main() -> None:
-    global _conn
-    _conn = store.connect(settings.db_path)
-    search = PriceSearch(store.get_services(_conn), _conn)
-    assistant = Assistant(_conn, search)
+    conn = store.connect(settings.db_path)
+    search = PriceSearch(store.get_services(conn), conn)
+    assistant = Assistant(conn, search)
 
-    print("== 1. Поиск по прайсу (эмбеддинги, без LLM) ==")
-    top1, top3, total, price_details = run_price_benchmark(search)
-    print(f"top-1: {top1}/{total}, top-3: {top3}/{total}")
+    print("== 1. Поиск по прайсу (bge-m3, без LLM) ==")
+    top1, top3, price_details = run_price_benchmark(search)
+    print(f"top-1: {top1}/{len(PRICE_QUESTIONS)}, top-3: {top3}/{len(PRICE_QUESTIONS)}")
 
     print("== 1b. Ответ LLM называет точную цену ==")
-    price_ok = run_price_llm_check(assistant)
-    print(f"цена названа: {price_ok}/{total}")
+    price_ok, price_llm_details = run_price_llm_check(assistant)
+    print(f"цена названа: {price_ok}/{len(PRICE_QUESTIONS)}")
 
     print("== 2. Триаж ==")
     triage_ok, triage_details = run_triage_benchmark(assistant)
     print(f"срочность верна: {triage_ok}/{len(TRIAGE_SCENARIOS)}")
 
     print("== 3. Диалог -> заявка (end-to-end) ==")
-    dt, appt_id = run_booking_e2e(assistant)
+    dt, appt_id = run_booking_e2e(assistant, conn)
     print(f"время: {dt:.1f} с, заявка id={appt_id or 'НЕ СОЗДАНА'}")
 
     report = build_report(
-        top1, top3, total, price_ok, price_details,
+        top1, top3, price_details, price_ok, price_llm_details,
         triage_ok, triage_details, dt, appt_id,
     )
     out = Path(__file__).parent.parent / "docs" / "benchmark.md"
@@ -147,23 +152,29 @@ def main() -> None:
     print(f"отчёт: {out}")
 
 
-def build_report(top1, top3, total, price_ok, price_details, triage_ok, triage_details, dt, appt_id):
+def build_report(top1, top3, price_details, price_ok, price_llm_details,
+                 triage_ok, triage_details, dt, appt_id):
     now = time.strftime("%Y-%m-%d %H:%M")
     lines = [
         "# Замеры качества (демо)",
         "",
         f"_Локальные замеры на демо-стенде, дата: {now}. ",
-        "Модель: nemotron-3-super (OpenRouter, free), эмбеддинги: text-embedding-3-small._",
+        "LLM: nvidia/nemotron-3.5-lightning (OpenRouter, free). "
+        "Эмбеддинги: BAAI/bge-m3, локально на GPU (RTX 5060 Ti)._",
         "",
         "## 1. Вопросы по прайсу",
         "",
-        f"- топ-1 поиск: **{top1}/{total}**",
-        f"- топ-3 поиск: **{top3}/{total}**",
-        f"- LLM назвал точную цену: **{price_ok}/{total}**",
+        f"- топ-1 поиск: **{top1}/{len(price_details)}**",
+        f"- топ-3 поиск: **{top3}/{len(price_details)}**",
+        f"- LLM назвал точную цену: **{price_ok}/{len(price_details)}**",
         "",
         "| Вопрос | Ожидаемая услуга | Поиск |",
         "|---|---|---|",
         *price_details,
+        "",
+        "| Вопрос | Ожидаемая цена | LLM назвал |",
+        "|---|---|---|",
+        *price_llm_details,
         "",
         "## 2. Триаж",
         "",

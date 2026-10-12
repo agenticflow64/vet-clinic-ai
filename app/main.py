@@ -4,7 +4,6 @@
     uvicorn app.main:app --port 8010
 """
 
-import json
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
